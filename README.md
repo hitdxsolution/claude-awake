@@ -7,15 +7,28 @@ Claude 로 오래 작업하거나 뭔가를 돌려 두는 중에 컴퓨터가 �
 
 ---
 
+## 다운로드
+
+아래 링크를 누르면 바로 받아집니다. **받은 파일을 더블클릭하면 설치 끝입니다.**
+
+### ⬇ [Windows용 받기](https://github.com/hitdxsolution/claude-awake/releases/latest/download/claude-awake-windows-x64.exe)
+
+### ⬇ macOS용 받기 — [애플 실리콘(M1 이후)](https://github.com/hitdxsolution/claude-awake/releases/latest/download/claude-awake-macos-arm64) · [인텔 맥](https://github.com/hitdxsolution/claude-awake/releases/latest/download/claude-awake-macos-x64)
+
+> 내 맥이 어느 쪽인지 모르겠으면 화면 왼쪽 위 사과 메뉴 → **이 Mac에 관하여** 에서 확인할 수 있습니다.
+> 칩 이름에 **Apple** 이 있으면 애플 실리콘, **Intel** 이 있으면 인텔 맥입니다.
+
+---
+
 ## 설치 (Windows)
 
 ### 1. 파일 받기
 
-위쪽 초록색 **Code** 버튼 → **Download ZIP** 을 눌러 내려받고, 압축을 풉니다.
+위 **[Windows용 받기](https://github.com/hitdxsolution/claude-awake/releases/latest/download/claude-awake-windows-x64.exe)** 를 누릅니다.
 
-### 2. 실행파일 실행하기
+### 2. 받은 파일 더블클릭
 
-압축을 푼 폴더 안 `dist` 폴더로 들어가서 **`claude-awake-windows-x64.exe` 를 더블클릭**합니다.
+보통 `다운로드` 폴더에 `claude-awake-windows-x64.exe` 가 받아집니다. **더블클릭**하세요.
 
 ### 3. 끝
 
@@ -51,19 +64,14 @@ Claude 앱이 켜져 있는 동안에는 컴퓨터가 잠들지 않습니다.
 
 ### 1. 파일 받기
 
-**Code** → **Download ZIP** 으로 내려받고 압축을 풉니다.
+위 **macOS용 받기** 에서 내 맥에 맞는 것을 누릅니다
+([애플 실리콘](https://github.com/hitdxsolution/claude-awake/releases/latest/download/claude-awake-macos-arm64) ·
+[인텔 맥](https://github.com/hitdxsolution/claude-awake/releases/latest/download/claude-awake-macos-x64)).
 
-### 2. 실행파일 실행하기
-
-`dist` 폴더에서 내 맥에 맞는 파일을 **우클릭 → 열기** 로 실행합니다.
-
-- **`claude-awake-macos-arm64`** — M1 이후 맥 (애플 실리콘)
-- **`claude-awake-macos-x64`** — 그 이전 인텔 맥
+### 2. 받은 파일을 우클릭 → 열기
 
 > 처음에는 반드시 **우클릭 → 열기**로 실행하세요. 그냥 더블클릭하면
 > "확인되지 않은 개발자" 경고만 뜨고 실행되지 않습니다. 한 번 이렇게 열어 두면 다음부터는 그냥 열립니다.
->
-> 내 맥이 어떤 것인지 모르겠으면 화면 왼쪽 위 사과 메뉴 → **이 Mac에 관하여** 에서 확인할 수 있습니다.
 
 ### 3. 끝
 
