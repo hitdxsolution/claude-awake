@@ -54,19 +54,19 @@ func main() {
 		switch {
 		case running && !blocking:
 			if err := blockSleep(); err != nil {
-				logf("could not block sleep: %v", err)
+				logf("절전 차단에 실패했습니다: %v", err)
 				return
 			}
 			blocking = true
-			logf("Claude detected → blocking sleep")
+			logf("Claude 실행 감지 → 절전을 막습니다")
 		case !running && blocking:
 			releaseSleepBlock()
 			blocking = false
-			logf("Claude closed → sleep allowed")
+			logf("Claude 종료 → 절전을 다시 허용합니다")
 		}
 	}
 
-	logf("started — platform=%s, poll=%s", runtime.GOOS, pollInterval)
+	logf("시작됨 — 플랫폼=%s, 확인주기=%s", runtime.GOOS, pollInterval)
 	check()
 
 	ticker := time.NewTicker(pollInterval)
@@ -76,7 +76,7 @@ func main() {
 		case <-ticker.C:
 			check()
 		case <-stop:
-			logf("stopping")
+			logf("종료합니다")
 			return
 		}
 	}

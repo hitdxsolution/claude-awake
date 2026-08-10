@@ -1,21 +1,21 @@
 #!/bin/bash
-# Install claude-awake as a macOS LaunchAgent: starts at login, restarts if it dies.
-#   Usage: ./macos-install.sh [path-to-binary]
-#   With no argument it uses ../dist/claude-awake-macos-<arch> from a local build.
+# claude-awake 설치 — 로그인할 때 자동 실행되고 죽으면 다시 뜨도록 LaunchAgent 로 등록한다.
+#   사용법: ./macos-install.sh [실행파일 경로]
+#   인자를 안 주면 이 맥의 칩에 맞는 ../dist/claude-awake-macos-<칩> 을 자동으로 고른다.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
 bin_src="${1:-}"
 if [ -z "$bin_src" ]; then
   if [ "$(uname -m)" = "arm64" ]; then
-    bin_src="$here/../dist/claude-awake-macos-arm64"
+    bin_src="$here/../dist/claude-awake-macos-arm64"   # 애플 실리콘(M1 이상)
   else
-    bin_src="$here/../dist/claude-awake-macos-x64"
+    bin_src="$here/../dist/claude-awake-macos-x64"     # 인텔 맥
   fi
 fi
 if [ ! -f "$bin_src" ]; then
-  echo "Binary not found: $bin_src" >&2
-  echo "Build it first:  make            (or pass the binary path as an argument)" >&2
+  echo "실행파일을 찾을 수 없습니다: $bin_src" >&2
+  echo "  make 로 빌드하거나, 실행파일 경로를 인자로 넘겨 주세요." >&2
   exit 1
 fi
 
@@ -38,10 +38,19 @@ cat > "$plist" <<EOF
 </dict></plist>
 EOF
 
-# Reload (bootout then bootstrap) so an existing agent is replaced cleanly.
-launchctl bootout "gui/$(id -u)/com.claude-awake" 2>/dev/null || true
-launchctl bootstrap "gui/$(id -u)" "$plist"
+# 이미 등록돼 있어도 깨끗하게 교체되도록 내렸다가(bootout) 다시 올린다(bootstrap).
+#   bootout 은 비동기라, 완전히 내려가기 전에 bootstrap 하면 "Input/output error(5)" 로 실패한다.
+#   그래서 목록에서 사라질 때까지 잠깐 기다린다(재설치·업그레이드 때 실제로 겪는 문제).
+domain="gui/$(id -u)"
+launchctl bootout "$domain/com.claude-awake" 2>/dev/null || true
+for _ in $(seq 1 50); do
+  launchctl print "$domain/com.claude-awake" >/dev/null 2>&1 || break
+  sleep 0.1
+done
+launchctl bootstrap "$domain" "$plist"
 
-echo "Installed. It runs at login and while Claude is open."
-echo "  binary: $dest"
-echo "  log:    /tmp/claude-awake.log"
+echo "설치했습니다."
+echo "  이제 로그인할 때 자동으로 시작되고, Claude 앱이 켜져 있는 동안 절전을 막습니다."
+echo "  실행파일: $dest"
+echo "  로그:     /tmp/claude-awake.log"
+echo "  제거하려면: bash install/macos-uninstall.sh"
