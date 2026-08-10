@@ -16,11 +16,11 @@ Long Claude sessions and background agents get interrupted when the machine goes
 A tiny watchdog polls every 15 seconds for the Claude app. While it's running, it holds an
 **OS built-in** sleep inhibitor; when Claude quits, it releases it.
 
-| Step | macOS | Windows |
-| --- | --- | --- |
-| Detect the app | `pgrep` for the Claude process | `tasklist` for `Claude.exe` |
-| Block sleep while open | `caffeinate -dimsu` | PowerShell `SetThreadExecutionState` |
-| Start at login + auto-restart | LaunchAgent | Scheduled Task (at logon) |
+| Step                          | macOS                          | Windows                              |
+| ----------------------------- | ------------------------------ | ------------------------------------ |
+| Detect the app                | `pgrep` for the Claude process | `tasklist` for `Claude.exe`          |
+| Block sleep while open        | `caffeinate -dimsu`            | PowerShell `SetThreadExecutionState` |
+| Start at login + auto-restart | LaunchAgent                    | Scheduled Task (at logon)            |
 
 No native addons — it only calls tools that already ship with each OS. The app is detected by
 **process name**, not a fixed install path, so it works wherever Claude is installed.
@@ -62,10 +62,11 @@ Uninstall: `powershell -ExecutionPolicy Bypass -File .\install\windows-uninstall
 Requires [Bun](https://bun.sh) **on the build machine only** (the target machine needs nothing).
 
 ```bash
-bun install            # dev-only type definitions
-bun run build          # typecheck + build all three: macOS arm64, macOS x64, Windows x64
+bun install            # dev-only toolchain (types, eslint, prettier)
+bun run build          # typecheck + lint + build all three: macOS arm64, macOS x64, Windows x64
 # or individually:
-bun run typecheck
+bun run typecheck      # tsc --noEmit
+bun run lint           # eslint --fix
 bun run build:mac-arm64
 bun run build:mac-x64
 bun run build:win-x64
@@ -74,7 +75,16 @@ bun run build:win-x64
 Output goes to `dist/`. Bun cross-compiles, so you can build the Windows `.exe` from a Mac.
 
 The source is **TypeScript** (`index.ts`) — Bun runs and compiles `.ts` natively, so there is no
-separate transpile step. `bun run typecheck` runs `tsc --noEmit` under `strict` mode.
+separate transpile step. The build is gated on `typecheck` **and** `lint`, so it fails rather than
+shipping a binary that does not pass both.
+
+### Code quality
+
+Strict by default — `tsconfig.json` enables `strict`, `noImplicitReturns`, `noUnusedLocals`,
+`noUnusedParameters`, `noFallthroughCasesInSwitch`, `exactOptionalPropertyTypes` and
+`erasableSyntaxOnly`. ESLint runs `typescript-eslint` **strictTypeChecked** with `no-explicit-any`,
+explicit return types, no floating promises, and Prettier enforced as a lint rule
+(single quotes, trailing commas, 2-space indent, 150 columns).
 
 ## Run without installing (dev)
 
@@ -84,7 +94,7 @@ bun run start
 
 ## Configuration
 
-Edit the constants at the top of `index.js` (poll interval, etc.) and rebuild.
+Edit the constants at the top of `index.ts` (poll interval, etc.) and rebuild.
 
 ---
 

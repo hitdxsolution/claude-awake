@@ -1,20 +1,29 @@
 {
   "compilerOptions": {
-    "lib": ["ESNext"],
-    "target": "ESNext",
+    "target": "ES2023",
+    "lib": ["ES2023"],
     "module": "ESNext",
-    "moduleResolution": "bundler",
     "types": ["bun"],
+    "skipLibCheck": true,
+
+    /* Bundler mode — Bun runs/compiles .ts directly, so nothing is emitted here. */
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "esModuleInterop": true,
     "noEmit": true,
 
+    /* Strict — same set as geumdo-erp (weddingpro_ui_react / wedding-pro-api 기준). */
     "strict": true,
-    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "skipLibCheck": true
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "erasableSyntaxOnly": true
   },
   "include": ["index.ts"]
 }

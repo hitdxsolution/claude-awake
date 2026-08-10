@@ -55,7 +55,7 @@ function startInhibitor(): ChildProcess {
     // Hold ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED (0x80000003) on this thread.
     //   Windows clears the requirement automatically when this PowerShell process exits (we kill it).
     const script = [
-      "$s='[DllImport(\"kernel32.dll\")] public static extern uint SetThreadExecutionState(uint e);';",
+      '$s=\'[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint e);\';',
       '$k=Add-Type -MemberDefinition $s -Name P -Namespace W -PassThru;',
       '[void]$k::SetThreadExecutionState(0x80000003);',
       'while($true){Start-Sleep -Seconds 3600}',
@@ -113,6 +113,6 @@ for (const signal of exitSignals) {
 }
 process.on('exit', stopInhibitor);
 
-log(`started — platform=${platform}, poll=${POLL_MS / 1000}s`);
+log(`started — platform=${platform}, poll=${(POLL_MS / 1000).toString()}s`);
 tick();
 setInterval(tick, POLL_MS);
