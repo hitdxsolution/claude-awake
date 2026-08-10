@@ -1,0 +1,21 @@
+{
+  "name": "claude-awake",
+  "version": "1.0.0",
+  "description": "Keep your computer awake while the Claude desktop app is running. Cross-platform (macOS & Windows), single binary, no runtime required on the target machine.",
+  "type": "module",
+  "bin": {
+    "claude-awake": "./index.js"
+  },
+  "scripts": {
+    "start": "bun run index.js",
+    "build:mac-arm64": "bun build ./index.js --compile --target=bun-darwin-arm64 --outfile dist/claude-awake-macos-arm64",
+    "build:mac-x64": "bun build ./index.js --compile --target=bun-darwin-x64 --outfile dist/claude-awake-macos-x64",
+    "build:win-x64": "bun build ./index.js --compile --target=bun-windows-x64 --outfile dist/claude-awake-windows-x64.exe",
+    "build": "bun run build:mac-arm64 && bun run build:mac-x64 && bun run build:win-x64"
+  },
+  "keywords": ["caffeine", "keep-awake", "no-sleep", "insomnia", "claude", "macos", "windows", "cross-platform"],
+  "license": "MIT",
+  "engines": {
+    "bun": ">=1.1.0"
+  }
+}

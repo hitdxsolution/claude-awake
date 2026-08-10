@@ -1,0 +1,6 @@
+# Build output — distribute via GitHub Releases, not the git tree.
+dist/
+
+node_modules/
+*.log
+.DS_Store
