@@ -3,8 +3,8 @@
 Keep your computer awake while the **Claude desktop app** is running — and let it sleep
 normally as soon as you quit Claude.
 
-Cross-platform (**macOS & Windows**). Ships as a single compiled binary, so the machine
-you install it on needs **no runtime** (no Node, no Bun) — just the one file.
+Cross-platform (**macOS & Windows**). A single ~2 MB static binary with zero dependencies, so
+the machine you install it on needs **no runtime** — no Node, no Python, nothing.
 
 ## Why
 
@@ -16,28 +16,28 @@ Long Claude sessions and background agents get interrupted when the machine goes
 A tiny watchdog polls every 15 seconds for the Claude app. While it's running, it holds an
 **OS built-in** sleep inhibitor; when Claude quits, it releases it.
 
-| Step                          | macOS                          | Windows                              |
-| ----------------------------- | ------------------------------ | ------------------------------------ |
-| Detect the app                | `pgrep` for the Claude process | `tasklist` for `Claude.exe`          |
-| Block sleep while open        | `caffeinate -dimsu`            | PowerShell `SetThreadExecutionState` |
-| Start at login + auto-restart | LaunchAgent                    | Scheduled Task (at logon)            |
+| Step | macOS | Windows |
+| --- | --- | --- |
+| Detect the app | `pgrep` for the Claude process | `tasklist` for `Claude.exe` |
+| Block sleep while open | `caffeinate -dimsu` | Win32 `SetThreadExecutionState` |
+| Start at login + auto-restart | LaunchAgent | Scheduled Task (at logon) |
 
-No native addons — it only calls tools that already ship with each OS. The app is detected by
-**process name**, not a fixed install path, so it works wherever Claude is installed.
+The app is detected by **process name**, not a fixed install path, so it works wherever Claude
+is installed. On Windows the Win32 API is called directly — no PowerShell helper process.
 
 ## Install
 
-Grab the binary for your OS from the [Releases](../../releases) page (or build it — see below),
-then run the installer for your platform.
+The binaries are committed in [`dist/`](dist), so you can download this repo (Code → Download
+ZIP, or `git clone`) and install straight away — nothing to build.
 
 ### macOS
 
 ```bash
-# from the repo root, after placing the binary in dist/ (or run `bun run build`)
 bash install/macos-install.sh
 ```
 
-Registers a LaunchAgent that starts at login and restarts if it dies. Log: `/tmp/claude-awake.log`.
+Picks the right binary for your Mac (Apple Silicon or Intel), then registers a LaunchAgent that
+starts at login and restarts if it dies. Log: `/tmp/claude-awake.log`.
 
 > First launch: macOS Gatekeeper may block an unsigned binary. Right-click the binary →
 > **Open** once to allow it (or sign/notarize for wider distribution).
@@ -50,7 +50,9 @@ Uninstall: `bash install/macos-uninstall.sh`
 powershell -ExecutionPolicy Bypass -File .\install\windows-install.ps1
 ```
 
-Registers a Scheduled Task that runs at logon and restarts on failure.
+Registers a Scheduled Task that runs at logon and restarts on failure. The binary is built for
+the GUI subsystem, so it never flashes a console window.
+Log: `%LOCALAPPDATA%\claude-awake\claude-awake.log`.
 
 > First launch: SmartScreen may warn about an unknown publisher → **More info → Run anyway**
 > (or code-sign for wider distribution).
@@ -59,55 +61,54 @@ Uninstall: `powershell -ExecutionPolicy Bypass -File .\install\windows-uninstall
 
 ## Build from source
 
-Requires [Bun](https://bun.sh) **on the build machine only** (the target machine needs nothing).
+Requires [Go](https://go.dev) **on the build machine only**.
 
 ```bash
-bun install            # dev-only toolchain (types, eslint, prettier)
-bun run build          # typecheck + lint + build all three: macOS arm64, macOS x64, Windows x64
-# or individually:
-bun run typecheck      # tsc --noEmit
-bun run lint           # eslint --fix
-bun run build:mac-arm64
-bun run build:mac-x64
-bun run build:win-x64
+make          # gofmt + go vet, then build all three binaries into dist/
+make check    # formatting + static analysis only
+go test ./... # verifies the inhibitor actually starts and leaves nothing behind
 ```
 
-Output goes to `dist/`. Bun cross-compiles, so you can build the Windows `.exe` from a Mac.
+Go cross-compiles, so `make` on a Mac produces the Windows `.exe` too. Individual targets:
+`make mac-arm64`, `make mac-x64`, `make windows-x64`.
 
-The source is **TypeScript** (`index.ts`) — Bun runs and compiles `.ts` natively, so there is no
-separate transpile step. The build is gated on `typecheck` **and** `lint`, so it fails rather than
-shipping a binary that does not pass both.
+Binaries are built with `-trimpath -s -w` (and `-H windowsgui` on Windows), which is why they
+land at roughly 2 MB each.
 
-### Code quality
-
-Strict by default — `tsconfig.json` enables `strict`, `noImplicitReturns`, `noUnusedLocals`,
-`noUnusedParameters`, `noFallthroughCasesInSwitch`, `exactOptionalPropertyTypes` and
-`erasableSyntaxOnly`. ESLint runs `typescript-eslint` **strictTypeChecked** with `no-explicit-any`,
-explicit return types, no floating promises, and Prettier enforced as a lint rule
-(single quotes, trailing commas, 2-space indent, 150 columns).
-
-## Run without installing (dev)
+## Run without installing
 
 ```bash
-bun run start
+./dist/claude-awake-macos-arm64   # Ctrl+C to stop; it releases the block on exit
 ```
 
 ## Configuration
 
-Edit the constants at the top of `index.ts` (poll interval, etc.) and rebuild.
+Edit `pollInterval` at the top of `main.go` and rebuild.
+
+## Layout
+
+| File | Purpose |
+| --- | --- |
+| `main.go` | The watchdog loop — platform-agnostic |
+| `platform_darwin.go` | macOS detection + `caffeinate` inhibitor |
+| `platform_windows.go` | Windows detection + `SetThreadExecutionState` |
+| `platform_linux.go` | Best-effort Linux (`systemd-inhibit`) |
+| `install/` | Autostart registration per OS |
+| `dist/` | Prebuilt binaries (committed) |
 
 ---
 
 ### 한국어 요약
 
 Claude 데스크톱 앱이 **켜져 있는 동안만** 컴퓨터가 절전에 들지 않게 막아 주고, 앱을 끄면
-절전이 자동 복귀합니다. **macOS·Windows 공용**이고, 설치하는 PC엔 **런타임(노드/번) 설치가
-전혀 필요 없습니다** — 컴파일된 실행파일 하나만 받으면 됩니다.
+절전이 자동 복귀합니다. **macOS·Windows 공용**이며, 설치하는 PC엔 **런타임 설치가 전혀 필요
+없습니다** — 2MB짜리 실행파일 하나가 전부입니다.
 
+- 바이너리가 `dist/`에 **커밋돼 있어** repo만 받으면 바로 설치됩니다(빌드 불필요)
 - 감지: 설치 경로가 아니라 **프로세스 이름**으로 → 어디에 깔려 있든 동작
-- 절전 차단: mac `caffeinate`, Windows `SetThreadExecutionState`(둘 다 OS 내장)
+- 절전 차단: mac `caffeinate`, Windows `SetThreadExecutionState`(Win32 API 직접 호출)
 - 자동시작: mac LaunchAgent, Windows 작업 스케줄러(로그인 시)
-- 빌드는 개발자 PC에서만 Bun 필요(`bun run build`) — 배포는 `dist/`의 바이너리를 Releases로.
+- 빌드는 개발자 PC에서만 Go 필요(`make`) — Mac에서 Windows exe까지 크로스컴파일됩니다
 
 ## License
 

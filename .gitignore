@@ -1,6 +1,5 @@
-# Build output — distribute via GitHub Releases, not the git tree.
-dist/
+# The release binaries ARE committed (see dist/) — they are ~2 MB each, so the whole set
+# fits comfortably in git and users can install straight from a repo download.
 
-node_modules/
-*.log
 .DS_Store
+*.log

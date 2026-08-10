@@ -15,7 +15,7 @@ if [ -z "$bin_src" ]; then
 fi
 if [ ! -f "$bin_src" ]; then
   echo "Binary not found: $bin_src" >&2
-  echo "Build it first:  bun run build      (or pass the binary path as an argument)" >&2
+  echo "Build it first:  make            (or pass the binary path as an argument)" >&2
   exit 1
 fi
 
