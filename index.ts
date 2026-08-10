@@ -11,19 +11,23 @@
 //     Linux   → `systemd-inhibit`           (best effort)
 //   No native addons — we only shell out to tools that already ship with each OS.
 
-import { spawn, spawnSync } from 'node:child_process';
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 
-const POLL_MS = 15_000; // how often to check whether Claude is running
+/** How often to check whether Claude is running. */
+const POLL_MS = 15_000;
 const APP_LABEL = 'Claude';
-const platform = process.platform; // 'darwin' | 'win32' | 'linux'
+
+/** The three platforms we adapt to; anything else falls back to the Linux path. */
+type Platform = NodeJS.Platform;
+const platform: Platform = process.platform;
 
 /** stdout line (LaunchAgent / Task Scheduler capture this to a log file). */
-function log(message) {
+function log(message: string): void {
   process.stdout.write(`[claude-awake] ${new Date().toISOString()} ${message}\n`);
 }
 
 /** Is the Claude desktop app currently running? Detected by process, not install path. */
-function isClaudeRunning() {
+function isClaudeRunning(): boolean {
   try {
     if (platform === 'darwin') {
       // main app executable is .../Claude.app/Contents/MacOS/Claude
@@ -42,7 +46,7 @@ function isClaudeRunning() {
 }
 
 /** Start a long-lived child that blocks system sleep. Killing it releases the block. */
-function startInhibitor() {
+function startInhibitor(): ChildProcess {
   if (platform === 'darwin') {
     // -dimsu: block display/idle/system/disk sleep + declare the user active. Lives until killed.
     return spawn('caffeinate', ['-dimsu'], { stdio: 'ignore' });
@@ -62,12 +66,14 @@ function startInhibitor() {
     });
   }
   // linux best-effort: the block lasts while the child (sleep infinity) lives.
-  return spawn('systemd-inhibit', ['--what=idle:sleep', '--who=claude-awake', '--why=Claude running', 'sleep', 'infinity'], { stdio: 'ignore' });
+  return spawn('systemd-inhibit', ['--what=idle:sleep', '--who=claude-awake', '--why=Claude running', 'sleep', 'infinity'], {
+    stdio: 'ignore',
+  });
 }
 
-let inhibitor = null;
+let inhibitor: ChildProcess | null = null;
 
-function stopInhibitor() {
+function stopInhibitor(): void {
   if (inhibitor !== null) {
     try {
       inhibitor.kill();
@@ -79,13 +85,16 @@ function stopInhibitor() {
 }
 
 /** One check: match the inhibitor to whether Claude is running. */
-function tick() {
+function tick(): void {
   const running = isClaudeRunning();
   if (running && inhibitor === null) {
-    inhibitor = startInhibitor();
+    const child = startInhibitor();
+    inhibitor = child;
     // If the inhibitor dies on its own, forget it so we respawn on the next tick.
-    inhibitor.on('exit', () => {
-      inhibitor = null;
+    child.on('exit', () => {
+      if (inhibitor === child) {
+        inhibitor = null;
+      }
     });
     log(`${APP_LABEL} detected → blocking sleep`);
   } else if (!running && inhibitor !== null) {
@@ -95,7 +104,8 @@ function tick() {
 }
 
 // Never leave the machine caffeinated if we are stopped.
-for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+const exitSignals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGHUP'];
+for (const signal of exitSignals) {
   process.on(signal, () => {
     stopInhibitor();
     process.exit(0);

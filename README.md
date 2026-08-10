@@ -62,14 +62,19 @@ Uninstall: `powershell -ExecutionPolicy Bypass -File .\install\windows-uninstall
 Requires [Bun](https://bun.sh) **on the build machine only** (the target machine needs nothing).
 
 ```bash
-bun run build          # builds all three: macOS arm64, macOS x64, Windows x64
+bun install            # dev-only type definitions
+bun run build          # typecheck + build all three: macOS arm64, macOS x64, Windows x64
 # or individually:
+bun run typecheck
 bun run build:mac-arm64
 bun run build:mac-x64
 bun run build:win-x64
 ```
 
 Output goes to `dist/`. Bun cross-compiles, so you can build the Windows `.exe` from a Mac.
+
+The source is **TypeScript** (`index.ts`) — Bun runs and compiles `.ts` natively, so there is no
+separate transpile step. `bun run typecheck` runs `tsc --noEmit` under `strict` mode.
 
 ## Run without installing (dev)
 
