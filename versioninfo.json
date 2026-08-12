@@ -1,0 +1,27 @@
+{
+  "//": "윈도우 실행파일에 박히는 버전 리소스. 이름·회사·설명·아이콘이 비어 있는 exe 는 그 자체로 백신 휴리스틱 점수가 높다. goversioninfo 가 이 파일을 읽어 resource_windows_amd64.syso 를 만들고, Go 가 그것을 링크한다.",
+  "FixedFileInfo": {
+    "FileVersion": { "Major": 0, "Minor": 2, "Patch": 0, "Build": 0 },
+    "ProductVersion": { "Major": 0, "Minor": 2, "Patch": 0, "Build": 0 },
+    "FileFlagsMask": "3f",
+    "FileFlags": "00",
+    "FileOS": "040004",
+    "FileType": "01",
+    "FileSubType": "00"
+  },
+  "StringFileInfo": {
+    "CompanyName": "hitdxsolution",
+    "ProductName": "claude-awake",
+    "FileDescription": "Claude 앱이 켜져 있는 동안 컴퓨터가 잠들지 않게 합니다",
+    "LegalCopyright": "Copyright (c) hitdxsolution. MIT License.",
+    "InternalName": "claude-awake",
+    "OriginalFilename": "claude-awake.exe",
+    "FileVersion": "0.2.0.0",
+    "ProductVersion": "0.2.0.0"
+  },
+  "VarFileInfo": {
+    "Translation": { "LangID": "0412", "CharsetID": "04B0" }
+  },
+  "IconPath": "assets/icon.ico",
+  "ManifestPath": "assets/claude-awake.manifest"
+}

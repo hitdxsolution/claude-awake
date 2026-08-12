@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- 초승달(잠) 위에 사선을 그어 "잠들지 않음"을 나타낸다.
+       배경이 단색이므로 마스크 대신 배경색 원을 겹쳐 초승달을 판다 — 변환 도구를 가리지 않는다. -->
+  <rect width="256" height="256" rx="56" fill="#D97757"/>
+  <circle cx="118" cy="132" r="70" fill="#FFFFFF"/>
+  <circle cx="152" cy="96" r="68" fill="#D97757"/>
+  <line x1="54" y1="202" x2="202" y2="54" stroke="#D97757" stroke-width="48" stroke-linecap="round"/>
+  <line x1="54" y1="202" x2="202" y2="54" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round"/>
+</svg>

@@ -3,3 +3,6 @@
 
 .DS_Store
 *.log
+
+# 윈도우 리소스는 make 가 versioninfo.json 에서 만들어 낸다
+*.syso
