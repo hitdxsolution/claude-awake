@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"unicode/utf16"
 	"unsafe"
 )
 
@@ -38,7 +40,19 @@ var (
 )
 
 // 설치 폴더 — 사용자 계정 영역이라 관리자 권한이 필요 없다.
+//
+//	%LOCALAPPDATA%\Programs 아래에 두는 것은 VS Code·Slack 같은 정상 앱이 쓰는 관례다.
+//	%LOCALAPPDATA% 바로 밑은 멀웨어가 즐겨 쓰는 자리라 백신 휴리스틱 점수가 그만큼 높다.
 func installDir() string {
+	base := os.Getenv("LOCALAPPDATA")
+	if base == "" {
+		base = os.Getenv("USERPROFILE")
+	}
+	return filepath.Join(base, "Programs", "claude-awake")
+}
+
+// 0.1 버전이 쓰던 설치 폴더. 그때 깔았던 사람이 새 파일을 실행하면 여기를 치운다.
+func legacyInstallDir() string {
 	base := os.Getenv("LOCALAPPDATA")
 	if base == "" {
 		base = os.Getenv("USERPROFILE")
@@ -92,21 +106,107 @@ func releaseSleepBlock() {
 
 const taskName = "claude-awake"
 
-// PowerShell 을 창 없이 실행한다. 작업 스케줄러 등록은 이 방법이 가장 안정적이다.
-func powershell(script string) error {
-	cmd := hiddenCommand("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script)
-	out, err := cmd.CombinedOutput()
+// 작업 스케줄러 등록은 schtasks.exe 로 한다.
+//
+//	예전에는 PowerShell 의 Register-ScheduledTask 를 썼는데, `powershell -ExecutionPolicy Bypass` 를
+//	창을 숨긴 채 실행하는 조합은 백신 휴리스틱이 가장 강하게 반응하는 패턴이다. 서명이 없는 이
+//	프로그램이 그 때문에 오탐으로 격리되는 일이 있었다. schtasks.exe 는 윈도우 기본 도구이고,
+//	XML 을 넘기면 배터리·실행시간·재시작까지 PowerShell 로 주던 설정을 그대로 줄 수 있다.
+func schtasks(args ...string) error {
+	out, err := hiddenCommand("schtasks", args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil
 }
 
+// 등록할 작업 정의. 요소 순서는 작업 스케줄러가 내보내는 XML 과 같게 맞춰 두었다.
+//
+//	ExecutionTimeLimit PT0S = 시간 제한 없음, RestartOnFailure = 죽으면 1 분 뒤 다시 띄움.
+const taskXMLTemplate = `<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>Claude 앱이 켜져 있는 동안 컴퓨터가 잠들지 않게 합니다.</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <LogonTrigger>
+      <Enabled>true</Enabled>
+      <UserId>%[1]s</UserId>
+    </LogonTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <UserId>%[1]s</UserId>
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <Priority>7</Priority>
+    <RestartOnFailure>
+      <Interval>PT1M</Interval>
+      <Count>999</Count>
+    </RestartOnFailure>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>%[2]s</Command>
+    </Exec>
+  </Actions>
+</Task>
+`
+
+// 작업을 등록할 계정. 내 계정 작업으로 등록해야 관리자 권한(UAC)이 필요 없다.
+func currentUserID() string {
+	user := os.Getenv("USERNAME")
+	domain := os.Getenv("USERDOMAIN")
+	if domain == "" {
+		domain = os.Getenv("COMPUTERNAME")
+	}
+	if domain == "" || user == "" {
+		return user
+	}
+	return domain + `\` + user
+}
+
+func escapeXML(text string) string {
+	var buf strings.Builder
+	_ = xml.EscapeText(&buf, []byte(text))
+	return buf.String()
+}
+
+// schtasks /XML 은 UTF-16 파일만 확실히 받아 준다. BOM 을 붙여 리틀엔디언으로 쓴다.
+func writeUTF16File(path, text string) error {
+	units := utf16.Encode([]rune(text))
+	buf := make([]byte, 0, len(units)*2+2)
+	buf = append(buf, 0xFF, 0xFE) // BOM
+	for _, unit := range units {
+		buf = append(buf, byte(unit), byte(unit>>8))
+	}
+	return os.WriteFile(path, buf, 0o644)
+}
+
 func isInstalled() bool {
 	if _, err := os.Stat(installedPath()); err != nil {
 		return false
 	}
-	return powershell("Get-ScheduledTask -TaskName '"+taskName+"' -ErrorAction Stop | Out-Null") == nil
+	return schtasks("/Query", "/TN", taskName) == nil
 }
 
 func install() error {
@@ -125,24 +225,35 @@ func install() error {
 		return err
 	}
 
-	// 로그인할 때 시작하고, 죽으면 다시 뜨고, 실행 시간 제한은 두지 않는다.
-	//   내 계정 작업으로 등록하므로 관리자 권한(UAC)이 필요 없다.
-	script := strings.Join([]string{
-		"$a=New-ScheduledTaskAction -Execute '" + installedPath() + "';",
-		"$t=New-ScheduledTaskTrigger -AtLogOn;",
-		"$s=New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries",
-		"-RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero);",
-		"Register-ScheduledTask -TaskName '" + taskName + "' -Action $a -Trigger $t -Settings $s -Force | Out-Null;",
-		"Start-ScheduledTask -TaskName '" + taskName + "'",
-	}, " ")
-	return powershell(script)
+	xmlPath := filepath.Join(installDir(), "task.xml")
+	definition := fmt.Sprintf(taskXMLTemplate, escapeXML(currentUserID()), escapeXML(installedPath()))
+	if err := writeUTF16File(xmlPath, definition); err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(xmlPath) }()
+
+	// /F 는 같은 이름의 기존 작업을 덮어쓴다 — 예전 버전 위에 다시 깔아도 깨끗하게 교체된다.
+	if err := schtasks("/Create", "/TN", taskName, "/XML", xmlPath, "/F"); err != nil {
+		return err
+	}
+	removeLegacyInstall()
+	return schtasks("/Run", "/TN", taskName)
+}
+
+// 예전 설치 폴더가 남아 있으면 지운다. 없으면 아무 일도 하지 않는다.
+func removeLegacyInstall() {
+	if legacyInstallDir() == installDir() {
+		return
+	}
+	_ = os.RemoveAll(legacyInstallDir())
 }
 
 func uninstall() error {
-	_ = powershell("Stop-ScheduledTask -TaskName '" + taskName + "' -ErrorAction SilentlyContinue;" +
-		"Unregister-ScheduledTask -TaskName '" + taskName + "' -Confirm:$false -ErrorAction SilentlyContinue")
+	_ = schtasks("/End", "/TN", taskName)
+	_ = schtasks("/Delete", "/TN", taskName, "/F")
 	// 실행 중인 자기 자신은 지울 수 없으므로, 지워지지 않아도 실패로 보지 않는다.
 	_ = os.Remove(installedPath())
+	removeLegacyInstall()
 	return nil
 }
 
