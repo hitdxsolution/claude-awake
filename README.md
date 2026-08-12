@@ -11,9 +11,9 @@ Claude 로 오래 작업하거나 뭔가를 돌려 두는 중에 컴퓨터가 �
 
 아래 링크를 누르면 바로 받아집니다. **받은 파일을 더블클릭하면 설치 끝입니다.**
 
-### ⬇ [Windows용 받기](https://github.com/hitdxsolution/claude-awake/raw/fix/antivirus-false-positive/dist/claude-awake-windows-x64.exe)
+### ⬇ [Windows용 받기](https://github.com/hitdxsolution/claude-awake/raw/main/dist/claude-awake-windows-x64.exe)
 
-### ⬇ macOS용 받기 — [애플 실리콘(M1 이후)](https://github.com/hitdxsolution/claude-awake/raw/fix/antivirus-false-positive/dist/claude-awake-macos-arm64) · [인텔 맥](https://github.com/hitdxsolution/claude-awake/raw/fix/antivirus-false-positive/dist/claude-awake-macos-x64)
+### ⬇ macOS용 받기 — [애플 실리콘(M1 이후)](https://github.com/hitdxsolution/claude-awake/raw/main/dist/claude-awake-macos-arm64) · [인텔 맥](https://github.com/hitdxsolution/claude-awake/raw/main/dist/claude-awake-macos-x64)
 
 > 내 맥이 어느 쪽인지 모르겠으면 화면 왼쪽 위 사과 메뉴 → **이 Mac에 관하여** 에서 확인할 수 있습니다.
 > 칩 이름에 **Apple** 이 있으면 애플 실리콘, **Intel** 이 있으면 인텔 맥입니다.
@@ -24,7 +24,7 @@ Claude 로 오래 작업하거나 뭔가를 돌려 두는 중에 컴퓨터가 �
 
 ### 1. 파일 받기
 
-위 **[Windows용 받기](https://github.com/hitdxsolution/claude-awake/raw/fix/antivirus-false-positive/dist/claude-awake-windows-x64.exe)** 를 누릅니다.
+위 **[Windows용 받기](https://github.com/hitdxsolution/claude-awake/raw/main/dist/claude-awake-windows-x64.exe)** 를 누릅니다.
 
 ### 2. 받은 파일 더블클릭
 
@@ -113,8 +113,8 @@ V3·알약 등 다른 백신도 **격리 보관소 / 검사 제외** 메뉴에 �
 ### 1. 파일 받기
 
 위 **macOS용 받기** 에서 내 맥에 맞는 것을 누릅니다
-([애플 실리콘](https://github.com/hitdxsolution/claude-awake/raw/fix/antivirus-false-positive/dist/claude-awake-macos-arm64) ·
-[인텔 맥](https://github.com/hitdxsolution/claude-awake/raw/fix/antivirus-false-positive/dist/claude-awake-macos-x64)).
+([애플 실리콘](https://github.com/hitdxsolution/claude-awake/raw/main/dist/claude-awake-macos-arm64) ·
+[인텔 맥](https://github.com/hitdxsolution/claude-awake/raw/main/dist/claude-awake-macos-x64)).
 
 ### 2. 받은 파일을 우클릭 → 열기
 
