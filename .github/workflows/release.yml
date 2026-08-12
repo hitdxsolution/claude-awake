@@ -1,0 +1,40 @@
+# 태그를 밀면 세 바이너리를 빌드해 릴리스에 올린다.
+#
+#   내 노트북에서 빌드해 올리는 것과 달리, 어떤 커밋에서 어떤 명령으로 만들어졌는지가
+#   GitHub 에 증명(attestation)으로 남는다. 코드 서명을 대신하지는 못하지만,
+#   "이 파일 어디서 났냐"는 물음에 내놓을 근거가 생긴다.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: 빌드
+        run: make all
+
+      - name: 빌드 출처 증명
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*
+
+      - name: 릴리스에 올리기
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --generate-notes --title "${GITHUB_REF_NAME}"
